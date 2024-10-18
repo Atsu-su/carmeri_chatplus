@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Storage;
+
+class ImageController extends Controller
+{
+    public function compress(Request $request)
+    {
+        // バリデーション
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        try {
+            // 画像を取得
+            $image = $request->file('image');
+
+            // Interventionインスタンスを作成
+            $img = Image::make($image);
+
+            // 画像の最大幅を1024pxに設定（アスペクト比は維持）
+            $img->resize(1024, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            // JPEG品質を70%に設定して圧縮
+            $quality = 70;
+
+            // 一意のファイル名を生成
+            $fileName = time() . '_' . uniqid() . '.jpg';
+
+            // 圧縮した画像を保存
+            Storage::put(
+                'public/compressed/' . $fileName,
+                $img->encode('jpg', $quality)->encoded
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => '画像を圧縮しました',
+                'path' => Storage::url('compressed/' . $fileName)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '画像の圧縮に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}

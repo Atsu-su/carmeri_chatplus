@@ -1,0 +1,39 @@
+LaravelでサーバーサイドでImage処理を行うための方法を説明します。Laravelでは主にIntervention Imageライブラリを使用することをお勧めします。
+Laravel Image Compression ImplementationClick to open code
+このコードを使用するには、以下の手順に従ってください：
+
+まず、Intervention Imageをインストールします：
+
+bashCopycomposer require intervention/image
+
+config/app.phpのprovidersに以下を追加：
+
+phpCopyIntervention\Image\ImageServiceProvider::class
+
+aliasesに以下を追加：
+
+phpCopy'Image' => Intervention\Image\Facades\Image::class
+
+ストレージリンクを作成：
+
+bashCopyphp artisan storage:link
+
+ルートを設定（routes/web.phpまたはapi.php）：
+
+phpCopyRoute::post('compress-image', [ImageController::class, 'compress']);
+このコードは以下の機能を提供します：
+
+画像のリサイズ（最大幅1024px）
+JPEG品質の圧縮（70%）
+一意のファイル名生成
+エラーハンドリング
+保存先パスの返却
+
+必要に応じて以下のようにカスタマイズできます：
+
+画像の最大幅（現在1024px）
+圧縮品質（現在70%）
+保存形式（現在JPG）
+保存先ディレクトリ
+
+具体的な要件があれば、それに応じて調整することができます。

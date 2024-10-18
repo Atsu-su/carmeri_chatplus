@@ -1,0 +1,27 @@
+public function test_purchased_item_has_sold_class()
+{
+    // テストデータの準備
+    $purchasedItem = Item::factory()->create([
+        'id' => 20,
+        'name' => 'メイクセット',
+        'is_purchased' => true
+    ]);
+    
+    $response = $this->get('/items');
+
+    // 複数の観点からの検証
+    $response->assertSuccessful()
+             ->assertSeeInOrder([
+                 '<a class="c-item"',
+                 'href="http://localhost/item/' . $purchasedItem->id . '"',
+                 '<p class="sold">',
+                 $purchasedItem->name,
+                 '</p>'
+             ], false)
+             ->assertDontSee('class="not-sold"');
+             
+    // データベースの状態も確認
+    $this->assertDatabaseHas('items', [
+        'id' => $purchasedItem->id,
+        'is_purchased' => true
+    ]);

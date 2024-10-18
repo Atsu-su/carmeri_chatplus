@@ -1,0 +1,51 @@
+はい、その認識が正確です。
+<input type="file">の値はセキュリティ上の理由でJavaScriptから設定できないため、バリデーション失敗後のリダイレクト時に$_REQUEST['image']は空になります。
+解決方法として、以下の2つのアプローチがあります：
+
+Base64データを画像ファイルに変換して処理する方法：
+
+phpCopypublic function store(Request $request)
+{
+    // バリデーション
+    $validator = Validator::make($request->all(), [
+        'title' => 'required',
+        // imageがない場合はtemp_imageをチェック
+        'image' => $request->hasFile('image') ? 'image|mimes:jpeg,png,jpg,gif|max:2048' : '',
+        'temp_image' => !$request->hasFile('image') ? 'required|string' : ''
+    ]);
+
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput();
+    }
+
+    // 画像の処理
+    if ($request->hasFile('image')) {
+        // 通常のファイルアップロード処理
+        $image = $request->file('image');
+    } else if ($request->filled('temp_image')) {
+        // Base64データを画像に変換
+        $base64Image = $request->input('temp_image');
+        // Base64のヘッダー部分を削除
+        $imageData = substr($base64Image, strpos($base64Image, ',') + 1);
+        // バイナリデータに変換
+        $imageData = base64_decode($imageData);
+        
+        // 一時ファイルとして保存
+        $tempPath = tempnam(sys_get_temp_dir(), 'uploaded_image_');
+        file_put_contents($tempPath, $imageData);
+        
+        // UploadedFileオブジェクトを作成
+        $image = new \Illuminate\Http\UploadedFile(
+            $tempPath,
+            'uploaded_image.jpg',
+            'image/jpeg',
+            null,
+            true
+        );
+    }
+
+    // 以降は通常の画像処理
+    $path = $image->store('uploads');
+    // ...

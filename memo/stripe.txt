@@ -1,0 +1,2 @@
+https://juno-engineer.com/article/laravel-stripe/
+https://readouble.com/laravel/9.x/ja/billing.html

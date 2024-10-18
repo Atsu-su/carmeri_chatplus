@@ -1,0 +1,127 @@
+class InfiniteImageLoader {
+    constructor(options = {}) {
+        this.container = options.container || document.getElementById('image-container');
+        this.loadingElement = options.loadingElement || document.getElementById('loading');
+        this.pageSize = options.pageSize || 10;
+        this.currentPage = 1;
+        this.loading = false;
+        this.hasMore = true;
+        this.imageFormat = options.imageFormat || 'url'; // 'url' または 'base64'
+        this.cache = new Map(); // URL形式の場合のキャッシュ
+
+        this.handleScroll = this.handleScroll.bind(this);
+        this.init();
+    }
+
+    init() {
+        window.addEventListener('scroll', this.handleScroll);
+        this.loadImages();
+    }
+
+    async handleScroll() {
+        if (this.loading || !this.hasMore) return;
+
+        const threshold = 200;
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const bodyHeight = document.documentElement.scrollHeight;
+
+        if (bodyHeight - scrollPosition < threshold) {
+            await this.loadImages();
+        }
+    }
+
+    async loadImages() {
+        try {
+            this.loading = true;
+            this.loadingElement.style.display = 'block';
+
+            const response = await fetch(`/api/images?page=${this.currentPage}&limit=${this.pageSize}`);
+            const data = await response.json();
+            
+            if (!data.images || data.images.length < this.pageSize) {
+                this.hasMore = false;
+            }
+
+            if (data.images && data.images.length > 0) {
+                await this.displayImages(data.images);
+                this.currentPage++;
+            }
+
+        } catch (error) {
+            console.error('画像の読み込みに失敗しました:', error);
+        } finally {
+            this.loading = false;
+            this.loadingElement.style.display = 'none';
+        }
+    }
+
+    async displayImages(images) {
+        // URLとBase64の両方に対応
+        for (const image of images) {
+            const imgElement = document.createElement('img');
+            
+            if (this.imageFormat === 'url') {
+                // URLの場合、画像をプリロード
+                try {
+                    if (!this.cache.has(image.url)) {
+                        const imageBlob = await this.preloadImage(image.url);
+                        this.cache.set(image.url, URL.createObjectURL(imageBlob));
+                    }
+                    imgElement.src = this.cache.get(image.url);
+                } catch (error) {
+                    console.error(`画像の読み込みに失敗: ${image.url}`, error);
+                    continue;
+                }
+            } else {
+                // Base64の場合、直接データを使用
+                imgElement.src = image.data;
+            }
+
+            imgElement.alt = image.description || '';
+            imgElement.classList.add('lazy-image');
+            imgElement.style.cssText = `
+                width: 300px;
+                height: auto;
+                margin: 10px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            `;
+
+            this.container.appendChild(imgElement);
+        }
+    }
+
+    async preloadImage(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`画像の読み込みに失敗: ${url}`);
+        }
+        return await response.blob();
+    }
+
+    clearCache() {
+        this.cache.forEach(url => URL.revokeObjectURL(url));
+        this.cache.clear();
+    }
+
+    destroy() {
+        this.clearCache();
+        window.removeEventListener('scroll', this.handleScroll);
+    }
+}
+
+// 使用例1: URLベースの画像読み込み
+const urlBasedLoader = new InfiniteImageLoader({
+    container: document.getElementById('image-container'),
+    loadingElement: document.getElementById('loading'),
+    pageSize: 12,
+    imageFormat: 'url'
+});
+
+// 使用例2: Base64ベースの画像読み込み
+const base64BasedLoader = new InfiniteImageLoader({
+    container: document.getElementById('image-container'),
+    loadingElement: document.getElementById('loading'),
+    pageSize: 12,
+    imageFormat: 'base64'
+});

@@ -1,0 +1,114 @@
+@startuml carmeri
+' hide the spot
+hide circle
+
+' avoid problems with angled crows feet
+skinparam linetype ortho
+
+entity "users" as users {
+  id
+  --
+  is_active
+  name
+  email
+  email_verified_at
+  password
+  image
+  postal_code
+  address
+  building_name
+  created_at
+  updated_at
+}
+
+entity "categories" as categories {
+  id
+  --
+  category
+  created_at
+  updated_at
+}
+
+entity "category_item" as category_item {
+  id
+  --
+  category_id<<FK>>
+  item_id<<FK>>
+  created_at
+  updated_at
+}
+
+entity "conditions" as conditions {
+  id
+  --
+  condition
+  created_at
+  updated_at
+}
+
+entity "items" as items {
+  id
+  --
+  seller_id<<FK>>
+  on_sale
+  name
+  price
+  brand
+  condition_id<<FK>>
+  description
+  image
+  created_at
+  updated_at
+}
+
+entity "payment_methods" as payment_methods {
+  id
+  --
+  payment_method
+  created_at
+  updated_at
+}
+
+entity "purchases" as purchases {
+  id
+  --
+  buyer_id<<FK>>
+  item_id<<FK>>
+  payment_method_id<<FK>>
+  status
+  created_at
+  updated_at
+}
+
+entity "likes" as likes {
+  id
+  --
+  item_id<<FK>>
+  user_id<<FK>>
+  created_at
+  updated_at
+}
+
+entity "comments" as comments {
+  id
+  --
+  item_id<<FK>>
+  user_id<<FK>>
+  comment
+  created_at
+  updated_at
+}
+
+categories ||--o{ category_item
+conditions ||--o{ items
+items ||--|{ category_item
+items ||--o{ likes
+items ||--o| purchases
+items ||--o{ comments
+items }o--|| users
+purchases }o--|| users
+users ||--o{ likes
+users ||--o{ comments
+purchases }o--|| payment_methods
+
+@enduml

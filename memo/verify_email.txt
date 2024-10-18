@@ -1,0 +1,140 @@
+LaravelのFortifyでメール認証を追加する手順を説明します：
+
+まずconfig/fortify.phpでfeatures配列にEmailVerificationを追加：
+
+phpCopy'features' => [
+    Features::registration(),
+    Features::resetPasswords(),
+    Features::emailVerification(), // これを追加
+    Features::updateProfileInformation(),
+    Features::updatePasswords(),
+    Features::twoFactorAuthentication(),
+],
+
+UserモデルにMustVerifyEmailインターフェースを実装：
+
+phpCopyuse Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class User extends Authenticatable implements MustVerifyEmail
+{
+    // ...
+}
+
+メール認証前のアクセス制限（ミドルウェアの追加）：
+
+phpCopy// routes/web.php
+Route::middleware(['auth', 'verified'])->group(function () {
+    // メール認証が必要なルート
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    });
+});
+
+メール設定の確認（.env）：
+
+envCopyMAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_username
+MAIL_PASSWORD=your_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+カスタマイズ（必要な場合）：
+
+認証メールのテンプレートをカスタマイズ：
+bashCopyphp artisan vendor:publish --tag=laravel-notifications
+認証後のリダイレクト先の変更：
+phpCopy// app/Providers/FortifyServiceProvider.php
+use Laravel\Fortify\Contracts\VerifyEmailViewResponse;
+
+public function boot()
+{
+    // 認証メール送信後のビューをカスタマイズ
+    Fortify::verifyEmailView(function () {
+        return view('auth.verify-email');
+    });
+}
+
+メール認証後のリダイレクト先の変更：
+
+phpCopy// app/Providers/EventServiceProvider.php
+use Illuminate\Auth\Events\Verified;
+
+protected $listen = [
+    Verified::class => [
+        function (Verified $event) {
+            // メール認証後の処理
+            session()->flash('verified', true);
+        },
+    ],
+];
+
+認証待ち画面の作成（例）：
+
+phpCopy// resources/views/auth/verify-email.blade.php
+<x-guest-layout>
+    <div class="mb-4 text-sm text-gray-600">
+        メールアドレスの確認が必要です。確認メールをご確認ください。
+        
+        @if (session('status') == 'verification-link-sent')
+            <div class="mt-4 text-sm text-green-600">
+                新しい確認メールを送信しました。
+            </div>
+        @endif
+    </div>
+
+    <div class="mt-4 flex items-center justify-between">
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+            <button type="submit">
+                確認メールを再送信
+            </button>
+        </form>
+
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit">
+                ログアウト
+            </button>
+        </form>
+    </div>
+</x-guest-layout>
+
+エラーメッセージのカスタマイズ（必要な場合）：
+
+phpCopy// resources/lang/ja/auth.php
+return [
+    'verified' => 'メールアドレスが確認できました。',
+    'verification' => [
+        'sent' => '確認メールを送信しました。',
+        'throttled' => '再送信までしばらくお待ちください。',
+    ],
+];
+追加の設定オプション：
+
+認証メールの有効期限設定：
+
+phpCopy// config/auth.php
+'verification' => [
+    'expire' => 60, // 分単位
+],
+
+カスタム通知の作成：
+
+phpCopyphp artisan make:notification VerifyEmailCustom
+
+// app/Notifications/VerifyEmailCustom.php
+class VerifyEmailCustom extends VerifyEmail
+{
+    public function toMail($notifiable)
+    {
+        return (new MailMessage)
+            ->subject('メールアドレスの確認')
+            ->line('アカウントを有効化するには以下のボタンをクリックしてください。')
+            ->action('メールアドレスを確認', $this->verificationUrl($notifiable))
+            ->line('このメールに心当たりがない場合は、無視してください。');
+    }
+}
+これらの設定により、ユーザー登録時のメール認証機能が有効になります。ユーザーは登録後にメール認証が必要となり、認証完了までは制限されたアクセスとなります。 CopyRetryClaude does not have the ability to run the code it generates yet.Claude can make mistakes. Please double-check responses.

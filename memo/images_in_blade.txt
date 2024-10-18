@@ -1,0 +1,23 @@
+{{-- 基本的な表示 --}}
+<img src="{{ asset('storage/' . $item->image_path) }}">
+
+{{-- 存在チェック付き --}}
+@if(Storage::disk('public')->exists($item->image_path))
+    <img src="{{ asset('storage/' . $item->image_path) }}">
+@else
+    <img src="{{ asset('images/no-image.png') }}">
+@endif
+
+// --------------------------------------------------------
+
+// Itemモデル内
+public function getImageUrlAttribute()
+{
+    if ($this->image_path) {
+        return asset('storage/item_images' . $this->image_path);
+    }
+    return asset('images/no-image.png');
+}
+
+// Bladeでの使用
+<img src="{{ $item->image_url }}">

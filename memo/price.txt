@@ -1,0 +1,2 @@
+{{-- ビューファイル内 --}}
+¥{{ number_format($product->price) }}

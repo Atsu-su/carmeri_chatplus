@@ -1,0 +1,12 @@
+// HTML要素の取得
+const textarea = document.querySelector('textarea');
+const submitButton = document.querySelector('button');
+
+// 初期状態ではボタンを無効化
+submitButton.disabled = true;
+
+// textareaの入力をリアルタイムで監視
+textarea.addEventListener('input', function() {
+    // 空白を除去した値が存在するかチェック
+    submitButton.disabled = !this.value.trim();
+});

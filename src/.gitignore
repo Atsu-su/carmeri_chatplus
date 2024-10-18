@@ -1,0 +1,19 @@
+/node_modules
+/public/hot
+# /public/storage
+/storage/*.key
+/storage/app/public/item_images/item_image*
+/storage/app/public/profile_images/profile_image*
+/vendor
+.env
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+*Zone.Identifier
+*.DS_Store

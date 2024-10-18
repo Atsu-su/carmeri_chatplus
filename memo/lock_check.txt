@@ -1,0 +1,180 @@
+// より実践的な実装例
+class LockChecker
+{
+    public function isRecordLocked($tableName, $recordId)
+    {
+        try {
+            $result = DB::select("
+                SELECT dl.lock_type, dl.lock_mode, dl.lock_status
+                FROM performance_schema.data_locks dl
+                WHERE dl.object_schema = DATABASE()
+                AND dl.object_name = ?
+                AND dl.lock_data = ?
+            ", [$tableName, $recordId]);
+
+            return !empty($result);
+
+        } catch (Exception $e) {
+            \Log::error('レコードのロック状態確認中にエラーが発生', [
+                'table' => $tableName,
+                'record_id' => $recordId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    // ロックの試行
+    public function tryLock($tableName, $recordId, $timeout = 5)
+    {
+        try {
+            return DB::transaction(function () use ($tableName, $recordId) {
+                $record = DB::table($tableName)
+                    ->where('id', $recordId)
+                    ->lockForShare()
+                    ->lockTimeout($timeout)
+                    ->first();
+
+                return $record !== null;
+            });
+
+        } catch (Exception $e) {
+            // レコードがロックされている場合など
+            return false;
+        }
+    }
+}
+
+// 使用例
+class UserController extends Controller
+{
+    private $lockChecker;
+
+    public function __construct(LockChecker $lockChecker)
+    {
+        $this->lockChecker = $lockChecker;
+    }
+
+    public function checkAndProcessUser($userId)
+    {
+        try {
+            // ロック状態の確認
+            if ($this->lockChecker->isRecordLocked('users', $userId)) {
+                return response()->json([
+                    'message' => 'レコードは現在ロックされています',
+                    'locked' => true
+                ]);
+            }
+
+            // ロックを試行して処理を実行
+            DB::transaction(function () use ($userId) {
+                $user = User::query()
+                    ->where('id', $userId)
+                    ->lockForShare()
+                    ->first();
+
+                if ($user) {
+                    // 処理を実行
+                    $this->processUser($user);
+                }
+            });
+
+            return response()->json([
+                'message' => '処理が完了しました',
+                'success' => true
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'エラーが発生しました',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
+より実用的な実装例（待機を含む）：
+phpCopyclass LockManager
+{
+    private const MAX_RETRY = 3;
+    private const WAIT_SECONDS = 2;
+
+    public function executeWithLock($tableName, $recordId, callable $callback)
+    {
+        $retry = 0;
+        
+        while ($retry < self::MAX_RETRY) {
+            try {
+                return DB::transaction(function () use ($tableName, $recordId, $callback) {
+                    // レコードをロックして取得
+                    $record = DB::table($tableName)
+                        ->where('id', $recordId)
+                        ->lockForShare()
+                        ->lockTimeout(5)
+                        ->first();
+
+                    if (!$record) {
+                        throw new Exception('Record not found');
+                    }
+
+                    // コールバック実行
+                    return $callback($record);
+                });
+
+            } catch (Exception $e) {
+                $retry++;
+                
+                if ($retry >= self::MAX_RETRY) {
+                    throw new Exception('ロックの取得に失敗しました: ' . $e->getMessage());
+                }
+
+                // 待機してから再試行
+                sleep(self::WAIT_SECONDS);
+            }
+        }
+    }
+}
+
+// 使用例
+$lockManager = new LockManager();
+
+try {
+    $result = $lockManager->executeWithLock('users', $userId, function ($user) {
+        // ロックが取得できた場合の処理
+        return $this->processUser($user);
+    });
+
+} catch (Exception $e) {
+    // エラー処理
+    \Log::error('処理に失敗しました', [
+        'error' => $e->getMessage()
+    ]);
+}
+注意点：
+
+これらのクエリはデータベースの権限が必要です
+パフォーマンスへの影響を考慮する必要があります：
+
+頻繁なロック確認は負荷につながる可能性がある
+必要な場合のみ実行することを推奨
+
+
+ロック情報は瞬間的な状態：
+
+確認時と実際の操作時で状態が変わる可能性がある
+完全な排他制御には不十分な場合がある
+
+
+データベースエンジンによって実装が異なる：
+
+MySQLの例を示していますが、PostgreSQLなど他のDBでは異なる
+使用するDBに応じた適切な方法を選択する必要がある
+
+
+トランザクション分離レベルの考慮：
+
+ロックの種類と分離レベルの関係を理解する必要がある
+必要に応じて適切な分離レベルを設定する
+
+
+
+これらのメソッドは主にデバッグや監視目的での使用を推奨します。実際の排他制御には、トランザクションとロックを適切に組み合わせて使用することが重要です。 CopyRetryClaude does not have the ability to run the code it generates yet.Claude can make mistakes. Please double-check responses.

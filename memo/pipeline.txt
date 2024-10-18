@@ -1,0 +1,132 @@
+では、array_reduce と配列の処理について詳しく解説します：
+
+array_reduce の基本：
+
+phpCopyarray_reduce(
+    array $array,        // 処理する配列
+    callable $callback,  // 配列の要素を処理する関数
+    mixed $initial = null // 初期値
+);
+
+// 基本的な例
+$numbers = [1, 2, 3, 4];
+$sum = array_reduce($numbers, function($carry, $item) {
+    return $carry + $item;
+}, 0);
+// $sum = 10 (0 + 1 + 2 + 3 + 4)
+
+パイプラインでの使用例を分解：
+
+phpCopy// パイプライン処理の配列
+$pipes = [
+    FirstPipe::class,    // 1番目の処理
+    SecondPipe::class,   // 2番目の処理
+    ThirdPipe::class     // 3番目の処理
+];
+
+// array_reverse で逆順に
+$reversed = array_reverse($pipes);
+// [
+//     ThirdPipe::class,    // 最後の処理が最初に
+//     SecondPipe::class,   // 真ん中の処理
+//     FirstPipe::class     // 最初の処理が最後に
+// ]
+
+// carry() メソッドの中身
+protected function carry()
+{
+    return function ($stack, $pipe) {
+        return function ($request) use ($stack, $pipe) {
+            return $pipe->handle($request, $stack);
+        };
+    };
+}
+
+// array_reduce の実行過程
+$result = array_reduce(
+    $reversed,      // 逆順にした配列
+    $this->carry(), // 処理方法
+    $destination    // 最終的なコールバック
+);
+
+実際の処理の流れを詳しく見てみましょう：
+
+phpCopy// より具体的な例で説明
+$pipes = [
+    'First',   // 1番目
+    'Second',  // 2番目
+    'Third'    // 3番目
+];
+
+$destination = function ($request) {
+    return '完了';
+};
+
+// array_reduce の各ステップを展開
+$result = array_reduce(
+    array_reverse($pipes), // ['Third', 'Second', 'First']
+    function ($stack, $pipe) {
+        return function ($request) use ($stack, $pipe) {
+            echo $pipe . "の処理\n";
+            return $stack($request);
+        };
+    },
+    $destination
+);
+
+// 実行される順序：
+// 1. First の処理
+// 2. Second の処理
+// 3. Third の処理
+// 4. 完了
+
+ネストされた関数の動作を視覚化：
+
+phpCopy// array_reduce の結果として作られる関数の構造
+$result = function ($request) {                    // First
+    echo "First の処理\n";
+    return function ($request) {                   // Second
+        echo "Second の処理\n";
+        return function ($request) {               // Third
+            echo "Third の処理\n";
+            return function ($request) {           // Destination
+                return '完了';
+            }($request);
+        }($request);
+    }($request);
+}
+
+実際の認証処理での例：
+
+phpCopy$pipes = [
+    EnsureLoginIsNotThrottled::class,
+    AttemptToAuthenticate::class,
+    PrepareAuthenticatedSession::class
+];
+
+// array_reduce で作られる処理の流れ
+$result = function ($request) {
+    // レート制限チェック
+    if (レート制限OK) {
+        return function ($request) {
+            // 認証処理
+            if (認証OK) {
+                return function ($request) {
+                    // セッション準備
+                    return function ($request) {
+                        return '認証完了';
+                    }($request);
+                }($request);
+            }
+        }($request);
+    }
+};
+この仕組みの利点：
+
+処理の順序が明確
+各処理が独立している
+エラー時に処理を中断できる
+処理の追加・削除が容易
+各処理が次の処理（$next）を知っている
+
+array_reduce を使用することで、複数の処理を1つの関数にまとめ、順番に実行できる構造を作ることができます。逆順にする理由は、最初の処理が最も外側のスコープになるようにするためです。
