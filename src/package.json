@@ -10,9 +10,11 @@
         "production": "mix --production"
     },
     "devDependencies": {
-        "axios": "^0.21",
+        "axios": "^1.8.3",
+        "laravel-echo": "^2.0.2",
         "laravel-mix": "^6.0.6",
         "lodash": "^4.17.19",
-        "postcss": "^8.1.14"
+        "postcss": "^8.1.14",
+        "pusher-js": "^8.4.0"
     }
 }

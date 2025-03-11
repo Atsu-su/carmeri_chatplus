@@ -21,9 +21,10 @@ class Item extends Model
         return $this->hasMany(CategoryItem::class);
     }
 
+    // 修正
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
     public function comments()

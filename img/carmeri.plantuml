@@ -9,6 +9,8 @@ entity "users" as users {
   id
   --
   is_active
+  rating_sum
+  evaluations
   name
   email
   email_verified_at
@@ -99,6 +101,20 @@ entity "comments" as comments {
   updated_at
 }
 
+entity "chats" as chats {
+  id
+  --
+  purchase_id<<FK>>
+  sender_id<<FK>>
+  is_read
+  is_updated
+  is_deleted
+  created_at
+  updated_at
+}
+
+users ||--o{ chats
+purchases ||--o{ chats
 categories ||--o{ category_item
 conditions ||--o{ items
 items ||--|{ category_item

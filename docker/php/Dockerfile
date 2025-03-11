@@ -10,6 +10,9 @@ RUN curl -sS https://getcomposer.org/installer | php \
   && mv composer.phar /usr/local/bin/composer \
   && composer self-update
 
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+  && apt install -y nodejs
+
 RUN groupadd -g 1000 user \
   && useradd -u 1000 -g user user \
   && chown -R user:user /var/www

@@ -12,17 +12,25 @@ coachtech フリマアプリ （carmeri）
 2. .envファイルの修正  
 
     APP_NAME=carmeri  
-    ...  
+
     DB_HOST=mysql  
     DB_DATABASE=laravel_db  
     DB_USERNAME=laravel_user  
-    DB_PASSWORD=laravel_pass  
-    ...  
-    MAIL_FROM_ADDRESS=`carmeri@example.com`  
+    DB_PASSWORD=laravel_pass
+
+    FILESYSTEM_DRIVER=public
+
+    MAIL_FROM_ADDRESS=`carmeri@example.com`
+
+    PUSHER_APP_ID=(app_id)  
+    PUSHER_APP_KEY=(key)  
+    PUSHER_APP_SECRET=(secret)  
+    PUSHER_APP_CLUSTER=(cluster)  
+    ※Pusherの値は各自取得下さい
 
 3. コンテナの作成  
     ```
-    $ docker-compose up -d  
+    $ docker-compose up -d --build  
     ```
 
 4. laravelの各種設定
@@ -31,15 +39,18 @@ coachtech フリマアプリ （carmeri）
     # chown www-data:www-data -R storage  
     # composer install  
     # art key:generate  
-    # art migrate  
-    # art db:seed  
+    # art migrate --seed  
     ```
 
 5. ブラウザにてアクセス
 
-    ブラウザを使い、http://localhost/ にアクセスする。
+    ブラウザを使い、http://localhost/ にアクセスする。  
 
-6. テスト環境の設定
+    各ユーザのパスワードは「password」である。  
+    ユーザIDのメールアドレスはhttp://localhost:8080 にアクセスし  
+    取得してください。  
+
+6. テスト環境の設定（必要に応じて実行）
     ```
     $ docker-compose exec mysql bash  
     # mysql -u root -p  
@@ -121,19 +132,19 @@ nginx 1.21.1
 mysql 8.0.26  
 
 ## ER図
-![ER図](./img/ER_diagram.jpg "ER図")
+<!-- ![ER図](./img/ER_diagram.jpg "ER図") -->
 
 ## 特記事項
-### 画面定義
-#### PG02
-タブの切り替えはJavascriptで実装したため、パスは存在しない。  
-#### PG11 / PG12
-タブの切り替えはJavascriptで実装したため、パスは存在しない。  
+### 未実装機能について
+・画像の送付
+・取引完了後のメールの送付
+・チャットのバリデーションエラーの表示
 
-### メール確認機能
-メールアドレス確認機能を搭載したため、ユーザ登録後、localhost:8025で  
-mailhogにアクセスし、メールの確認を行う必要がある。確認するとプロフィ  
-ール登録画面へ遷移する。
+### 評価機能について
+出品者が購入者を評価するという機能は実装していない  
+現在の画面仕様では表示されている評価が出品者、購入者いずれの
+評価であるか曖昧になる、また一般的に購入者を評価することは
+ないためである。
 
 ### テストの実施について
 carmeri/srcにtest.shを作成している。artisan testコマンドを実行すると  
@@ -147,13 +158,6 @@ DBの不整合が発生し、テストが正常に完了しない。そのため
 の度にtests/test_images/profile_imagesからコピーされ復元される。これは  
 テスト時にプロフィール画像が削除され、後続のテストに支障をきたすため  
 復元している。個別にテストを実行することも可能である。
-
-### テストケースNo.11について
-実施不可であるため、作成していない。支払方法の表示切替はJavascriptで  
-実装している。
-
-### 基本設計書 バリデーション
-各種修正箇所を赤字で記載している。
 
 ## URL
 http://localhost/

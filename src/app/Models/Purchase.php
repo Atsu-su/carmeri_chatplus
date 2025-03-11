@@ -11,6 +11,8 @@ class Purchase extends Model
 
     protected $guarded = ['id'];
 
+    const PROCESSING = 'processing';
+
     public function isPurchased()
     {
         return $this->status === 'purchased';
@@ -29,5 +31,10 @@ class Purchase extends Model
     public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function chats()
+    {
+        return $this->hasMany(Chat::class);
     }
 }

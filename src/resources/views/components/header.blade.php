@@ -1,7 +1,7 @@
 <div id="header">
   <img class="logo" src="{{ asset('img/logo.svg') }}" alt="carmeriのロゴ">
   @if (request()->headerType == 'logOut' || request()->headerType == 'logIn')
-    <form class="search" action="{{ route('index.search') }}" method="post">
+    <form class="search" action="{{ route('home.search') }}" method="post">
       @csrf
       <input class="search-input" type="text" name="keyword" value="{{ $keyword ?? '' }}" placeholder="なにをお探しですか？">
     </form>

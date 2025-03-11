@@ -59,12 +59,12 @@
         </tr>
       </table>
       @if (is_null($item->purchase))
-        <button class="c-btn c-btn--red" type="submit">購入する</button>
+        <button class="c-btn c-btn--red" type="submit">購入手続きを開始する</button>
       @else
         <p class="c-btn c-btn--disabled">
           {{ $item->purchase->isPurchased() ? '購入済み' : '購入手続き中' }}
         </p>
-        <a class="summary-link" href="{{ route('index') }}">商品一覧に戻る</a>
+        <a class="summary-link" href="{{ route('home') }}">商品一覧に戻る</a>
       @endif
     </div>
   </form>
