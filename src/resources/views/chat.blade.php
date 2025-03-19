@@ -104,70 +104,72 @@
             <p class="chat-item-info-price">¥{{ number_format($purchase->item->price) }}</p>
           </div>
         </div>
-        <div class="chat-content">
-          <ul>
-            {{-- class="chat-content-list right"にすると右に寄る --}}
-            @foreach ($chats as $chat)
-              <li class="chat-content-list {{ $chat->sender_id != auth()->id() ? 'left' : 'right'}}">
-                <div class="chat-content-list-profile">
-                  <div class="chat-content-list-profile-outer-frame">
-                    @if ($chat->user->image && Storage::exists('profile_images/'.$chat->user->image))
-                      <img class="chat-content-list-profile-inner-frame" src="{{ Storage::url('profile_images/').$chat->user->image }}" alt="プロフィールの画像">
+        <div class="chat-content-container">
+          <div class="chat-content">
+            <ul>
+              {{-- class="chat-content-list right"にすると右に寄る --}}
+              @foreach ($chats as $chat)
+                <li class="chat-content-list {{ $chat->sender_id != auth()->id() ? 'left' : 'right'}}">
+                  <div class="chat-content-list-profile">
+                    <div class="chat-content-list-profile-outer-frame">
+                      @if ($chat->user->image && Storage::exists('profile_images/'.$chat->user->image))
+                        <img class="chat-content-list-profile-inner-frame" src="{{ Storage::url('profile_images/').$chat->user->image }}" alt="プロフィールの画像">
+                      @else
+                        <div class="chat-content-list-profile-no-image">
+                          <p>NO</p>
+                          <p>IMAGE</p>
+                        </div>
+                      @endif
+                    </div>
+                    <p class="chat-content-list-profile-name">{{ $chat->user->name }}</p>
+                  </div>
+                  <div class="chat-content-list-container">
+                    @if (!$chat->is_deleted)
+                      <p class="chat-content-list-message" data-chatid="{{ $chat->id }}">{{ $chat->message }}</p>
                     @else
-                      <div class="chat-content-list-profile-no-image">
-                        <p>NO</p>
-                        <p>IMAGE</p>
+                      <p class="chat-content-list-message deleted" data-chatid="{{ $chat->id }}">このメッセージは削除されました</p>
+                    @endif
+                    <p class="chat-content-list-datetime">{{ $chat->created_at->format('Y/m/d H:i') }}</p>
+                    @if ($chat->sender_id == auth()->id() && !$chat->is_deleted)
+                      <div class="chat-content-list-edit">
+                        <a class="chat-content-list-edit-modify">編集</a>
+                        <a class="chat-content-list-edit-delete">削除</a>
                       </div>
                     @endif
                   </div>
-                  <p class="chat-content-list-profile-name">{{ $chat->user->name }}</p>
+                </li>
+              @endforeach
+            </ul>
+            {{-- メッセージ編集 --}}
+            <dialog id="modify" class="chat-content-modal-modify">
+              <form id="modify-form">
+                @csrf
+                <textarea id="modify-textarea" name="modified-message" placeholder="メッセージを入力してください"></textarea>
+                <div class="chat-content-modal-modify-buttons">
+                  <button id="modify-submit" class="c-btn c-btn--modal-edit" type="button">編集</button>
+                  <a id="modify-cancel" class="c-btn c-btn--modal-edit-cancel">キャンセル</a>
                 </div>
-                <div class="chat-content-list-container">
-                  @if (!$chat->is_deleted)
-                    <p class="chat-content-list-message" data-chatid="{{ $chat->id }}">{{ $chat->message }}</p>
-                  @else
-                    <p class="chat-content-list-message deleted" data-chatid="{{ $chat->id }}">このメッセージは削除されました</p>
-                  @endif
-                  <p class="chat-content-list-datetime">{{ $chat->created_at->format('Y/m/d H:i') }}</p>
-                  @if ($chat->sender_id == auth()->id() && !$chat->is_deleted)
-                    <div class="chat-content-list-edit">
-                      <a class="chat-content-list-edit-modify">編集</a>
-                      <a class="chat-content-list-edit-delete">削除</a>
-                    </div>
-                  @endif
+              </form>
+            </dialog>
+            {{-- メッセージ削除 --}}
+            <dialog id="delete" class="chat-content-modal-delete">
+              <div id="delete-container" class="chat-content-modal-delete-container">
+                @csrf
+                <p id="delete-p"></p>
+                <div class="chat-content-modal-delete-buttons">
+                  <button id="delete-submit" class="c-btn c-btn--modal-edit" type="button">削除</button>
+                  <a id="delete-cancel" class="c-btn c-btn--modal-edit-cancel">キャンセル</a>
                 </div>
-              </li>
-            @endforeach
-          </ul>
-          {{-- メッセージ編集 --}}
-          <dialog id="modify" class="chat-content-modal-modify">
-            <form id="modify-form">
-              @csrf
-              <textarea id="modify-textarea" name="modified-message" placeholder="メッセージを入力してください"></textarea>
-              <div class="chat-content-modal-modify-buttons">
-                <button id="modify-submit" class="c-btn c-btn--modal-edit" type="button">編集</button>
-                <a id="modify-cancel" class="c-btn c-btn--modal-edit-cancel">キャンセル</a>
               </div>
-            </form>
-          </dialog>
-          {{-- メッセージ削除 --}}
-          <dialog id="delete" class="chat-content-modal-delete">
-            <div id="delete-container" class="chat-content-modal-delete-container">
-              @csrf
-              <p id="delete-p"></p>
-              <div class="chat-content-modal-delete-buttons">
-                <button id="delete-submit" class="c-btn c-btn--modal-edit" type="button">削除</button>
-                <a id="delete-cancel" class="c-btn c-btn--modal-edit-cancel">キャンセル</a>
-              </div>
+            </dialog>
+            <div class="chat-content-send">
+              <form id="form" onsubmit="return sendMessageWrapper()">
+                @csrf
+                <textarea id="input" class="chat-content-send-input" type="text" name="message" value="" placeholder="取引メッセージを入力してください"></textarea>
+                <button class="chat-content-send-add-image c-btn c-btn--chat-add-image">画像を追加</button>
+                <button class="chat-content-send-submit" type="submit"></button>
+              </form>
             </div>
-          </dialog>
-          <div class="chat-content-send">
-            <form id="form" onsubmit="return sendMessageWrapper()">
-              @csrf
-              <textarea id="input" class="chat-content-send-input" type="text" name="message" value="" placeholder="取引メッセージを入力してください"></textarea>
-              <button class="chat-content-send-add-image c-btn c-btn--chat-add-image">画像を追加</button>
-              <button class="chat-content-send-submit" type="submit"></button>
-            </form>
           </div>
         </div>
       </div>
@@ -236,6 +238,21 @@
       // ダイアログを表示
       deleteDialog.showModal();
     }
+
+    // 画面の一番下までスクロール
+    function scrollToBottom() {
+      const chatContent = document.querySelector('.chat-content ul');
+      chatContent.scrollTop = chatContent.scrollHeight;
+    }
+  </script>
+
+  {{-- ================================================ --}}
+  {{-- 初期化処理 --}}
+  {{-- ================================================ --}}
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      scrollToBottom();
+    });
   </script>
 
   {{-- ================================================ --}}
@@ -256,8 +273,6 @@
     // 関数定義
     // -----------------------
     function renderChat(isLeft, data) {
-      console.log(data);
-
       const ul = document.querySelector('.chat-content ul');
 
       const li = document.createElement('li');
@@ -335,6 +350,9 @@
       li.appendChild(contentDiv);
 
       ul.appendChild(li);
+
+      // 画面の位置を最下部へ移動
+      scrollToBottom();
     }
 
     function sendMessage() {
@@ -371,18 +389,20 @@
         return response.json();
       })
       .then(data => {
-        console.log('送信成功ルート')
+        // console.log('送信成功ルート');
 
-        // 送信したチャットの表示
-        renderChat(false, data);
-        // 入力フィールドをクリア
-        input.value = '';
         // 送信中フラグを下げる
         isSending = false;
+        // 入力フィールドをクリア
+        input.value = '';
+        // 送信したチャットの表示
+        renderChat(false, data);
+        // 画面の位置を最下部へ移動
+        // scrollToBottom();
+        // Cookieに保存された入力値の削除
+        deleteSavedTextCookie(cookieName, purchaseId);
         // 入力フィールドの幅を初期化
         adjustHeight();
-        // 保存された入力値の削除
-        deleteSavedTextCookie(cookieName, purchaseId);
       })
       .catch(error => {
         isSending = false;
@@ -435,7 +455,6 @@
 
     function deleteSavedTextCookie(cookieName, id) {
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/chat/${id}`;
-      console.log('deleteSavedTextCookie 作成中')
     }
 
     // -----------------------
@@ -659,7 +678,6 @@
       const deleteLinks = document.querySelectorAll('.chat-content-list-edit-delete');
       deleteLinks.forEach(function(link) {
         link.addEventListener('click', function(e) {
-          console.log('削除にイベントを付加します')
           createDeleteLink(e, link, deleteContainer, deleteDialog);
         });
       });
@@ -718,7 +736,6 @@
 
       // textareaの入力内容が変更されたらCookieに保存
       textarea.addEventListener('input', function() {
-          console.log('inputイベントが発生しました');
           saveTextAreaToCookie(textarea, cookieName, purchaseId);
       });
     });

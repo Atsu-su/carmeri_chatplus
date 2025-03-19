@@ -1935,6 +1935,7 @@ body {
 
 #chat .chat {
   width: calc(100% - 260px);
+  height: calc(100vh + 382px);
   display: flex;
   flex-direction: column;
 }
@@ -2016,13 +2017,24 @@ body {
   gap: 20px;
 }
 
-#chat .chat-content {
-  padding: 26px;
-  flex: 1;
+#chat .chat-content-container {
   display: flex;
   flex-direction: column;
-  /* position: sticky;
-  bottom: 0; */
+  flex: 1;
+  overflow: hidden;  
+}
+
+#chat .chat-content {
+  padding: 26px 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+#chat .chat-content ul {
+  padding: 0 20px;
+  overflow-y: auto;
 }
 
 #chat .chat-content-list:not(:first-child) {
@@ -2177,7 +2189,7 @@ body {
 
 #chat .chat-content-send {
   margin-top: auto;
-  padding-top: 30px;
+  padding: 30px 20px 0;
   width: 100%;
 }
 
